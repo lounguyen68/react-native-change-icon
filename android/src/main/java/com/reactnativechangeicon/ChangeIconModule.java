@@ -14,14 +14,10 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.module.annotations.ReactModule;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @ReactModule(name = "ChangeIcon")
 public class ChangeIconModule extends ReactContextBaseJavaModule implements Application.ActivityLifecycleCallbacks {
     public static final String NAME = "ChangeIcon";
     private final String packageName;
-    private final Set<String> classesToKill = new HashSet<>();
     private Boolean iconChanged = false;
     private String componentClass = "";
 
@@ -71,12 +67,14 @@ public class ChangeIconModule extends ReactContextBaseJavaModule implements Appl
             this.componentClass = activityName.endsWith("MainActivity") ? activityName + "Default" : activityName;
         }
 
+        String[] activityNameSplit = activityName.split(".MainActivity");
         final String newIconName = (iconName == null || iconName.isEmpty()) ? "Default" : iconName;
-        final String activeClass = this.packageName.replaceFirst("\\.dev$", "") + ".MainActivity" + newIconName;
+        final String activeClass = activityNameSplit[0] + ".MainActivity" + newIconName;
         if (this.componentClass.equals(activeClass)) {
             promise.reject("ANDROID:ICON_ALREADY_USED:" + this.componentClass);
             return;
         }
+
         try {
             activity.getPackageManager().setComponentEnabledSetting(
                     new ComponentName(this.packageName, activeClass),
@@ -87,10 +85,11 @@ public class ChangeIconModule extends ReactContextBaseJavaModule implements Appl
             promise.reject("ANDROID:ICON_INVALID");
             return;
         }
-        this.classesToKill.add(this.componentClass);
+        
         this.componentClass = activeClass;
         activity.getApplication().registerActivityLifecycleCallbacks(this);
         iconChanged = true;
+        activity.finish();
     }
 
     private void completeIconChange() {
@@ -100,12 +99,6 @@ public class ChangeIconModule extends ReactContextBaseJavaModule implements Appl
         if (activity == null)
             return;
         
-        classesToKill.remove(componentClass);
-        classesToKill.forEach((cls) -> activity.getPackageManager().setComponentEnabledSetting(
-                new ComponentName(this.packageName, cls),
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                PackageManager.DONT_KILL_APP));
-        classesToKill.clear();
         iconChanged = false;
     }
 
