@@ -80,6 +80,11 @@ public class ChangeIconModule extends ReactContextBaseJavaModule implements Appl
         }
         try {
             activity.getPackageManager().setComponentEnabledSetting(
+                    new ComponentName(this.packageName, this.componentClass),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP);
+
+            activity.getPackageManager().setComponentEnabledSetting(
                     new ComponentName(this.packageName, activeClass),
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                     PackageManager.DONT_KILL_APP);
